@@ -11,6 +11,7 @@ roslaunch planning TBD
 
 ## Packages
 ### Vision:
+roslaunch realsense2_camera rs_camera.launch -> to bringup the realsense camera
 #### Topics:
 /vision/closure (Publisher)
 #### Services:
