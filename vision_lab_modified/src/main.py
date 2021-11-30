@@ -15,6 +15,8 @@ pointcloud.
 from __future__ import print_function
 from collections import deque
 
+from matplotlib.pyplot import axis
+
 import rospy
 import message_filters
 import ros_numpy
@@ -43,7 +45,8 @@ def isolate_object_of_interest(points, image, cam_matrix, trans, rot):
     points = segment_pointcloud(points, segmented_image, cam_matrix, trans, rot)
     return points
 
-def isolate_section(segmented_image, points, cam_matrix, trans, rot):
+
+def isolate_section(points, segmented_image, cam_matrix, trans, rot):
     sections = discretize(segmented_image)
     
     for s in sections:
@@ -52,7 +55,7 @@ def isolate_section(segmented_image, points, cam_matrix, trans, rot):
         # check if this section is closed/sutured
         # use teachable machine for this part
         # if section is closed, skip it. Othewise, send the point cloud to baxter
-        if True: # found the lowest unclosed skin
+        if not check_closed: # found the lowest unclosed skin
             # project the point cloud only in this section
             mask = segmented_image*0
             mask[s[0][0]: s[0][1],] = 1
@@ -63,12 +66,13 @@ def isolate_section(segmented_image, points, cam_matrix, trans, rot):
             # now project the point cloud only on our area of interest
 
             points = segment_pointcloud(points, section, cam_matrix, trans, rot)
-            break
-        elif True: # check if finished
+            poke_position = np.mean(points, axis=0)
+            return poke_position, points
         
-        
-
     return points
+def check_closed():
+    # edit this using the teachable machine model
+    return False
 
 def numpy_to_pc2_msg(points):
     return ros_numpy.msgify(PointCloud2, points, stamp=rospy.Time.now(),
@@ -83,7 +87,8 @@ class PointcloudProcess:
     def __init__(self, points_sub_topic, 
                        image_sub_topic,
                        cam_info_topic,
-                       points_pub_topic):
+                       points_pub_topic,
+                       poke_position_topic):
 
         self.num_steps = 0
 
@@ -98,12 +103,18 @@ class PointcloudProcess:
         
         self.points_pub = rospy.Publisher(points_pub_topic, PointCloud2, queue_size=10)
         self.image_pub = rospy.Publisher('segmented_image', Image, queue_size=10)
-        
+        # additional topics
+        self.section_pub = rospy.Publisher('segmented_section', Image, queue_size=10)
+
+        self.poking_pos_pub = rospy.Publisher(poke_position_topic, Image, queue_size=10)
+
         ts = message_filters.ApproximateTimeSynchronizer([points_sub, image_sub, caminfo_sub],
                                                           10, 0.1, allow_headerless=True)
+        
         ts.registerCallback(self.callback)
 
     def callback(self, points_msg, image, info):
+    
         try:
             intrinsic_matrix = get_camera_matrix(info)
             rgb_image = ros_numpy.numpify(image)
@@ -134,21 +145,36 @@ class PointcloudProcess:
             self.points_pub.publish(points_msg)
             print("Published segmented pointcloud at timestamp:",
                    points_msg.header.stamp.secs)
+            # 
+            # self.image_pub.publish(image)
+
+            poking_point, section = isolate_section(points, image, info, 
+                np.array(trans), np.array(rot))
+            section_msg = numpy_to_pc2_msg(section)
+            self.section_pub.publish(section_msg)
+
+            self.poking_pos_pub.publish(poking_point)
+        # print("no messages")
+            
+
 
 def main():
     CAM_INFO_TOPIC = '/camera/color/camera_info'
     RGB_IMAGE_TOPIC = '/camera/color/image_raw'
     POINTS_TOPIC = '/camera/depth/color/points'
     POINTS_PUB_TOPIC = 'segmented_points'
+    POKE_POSITION_TOPIC = "poking_point"
 
     rospy.init_node('realsense_listener')
     process = PointcloudProcess(POINTS_TOPIC, RGB_IMAGE_TOPIC,
-                                CAM_INFO_TOPIC, POINTS_PUB_TOPIC)
+                                CAM_INFO_TOPIC, POINTS_PUB_TOPIC,
+                                POKE_POSITION_TOPIC)
     r = rospy.Rate(1000)
-
+    print('hello')
     while not rospy.is_shutdown():
         process.publish_once_from_queue()
         r.sleep()
 
 if __name__ == '__main__':
+    
     main()

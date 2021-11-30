@@ -324,7 +324,7 @@ def check_for_close():
     # if predicion == 0:
     #     return False
     # return True
-    return NONE
+    return False
 
 def discretize(image, n= 10):
 
