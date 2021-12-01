@@ -23,13 +23,14 @@ import ros_numpy
 import tf
 
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
+from geometry_msgs.msg import Vector3
 
 import numpy as np
 import cv2
 
 from cv_bridge import CvBridge
 
-from image_segmentation import segment_image, discretize
+from image_segmentation import segment_image, discretize, show_image
 from pointcloud_segmentation import segment_pointcloud
 
 
@@ -46,30 +47,46 @@ def isolate_object_of_interest(points, image, cam_matrix, trans, rot):
     return points
 
 
-def isolate_section(points, segmented_image, cam_matrix, trans, rot):
-    sections = discretize(segmented_image)
+def isolate_section(points, image, cam_matrix, trans, rot):
+    sections = discretize(image)
     
     for s in sections:
         # s is in the form of ((start, end), pixel values)
-
+        # print(s)
         # check if this section is closed/sutured
         # use teachable machine for this part
         # if section is closed, skip it. Othewise, send the point cloud to baxter
-        if not check_closed: # found the lowest unclosed skin
+        if True: # found the lowest unclosed skin
             # project the point cloud only in this section
-            mask = segmented_image*0
+            mask = image*0
             mask[s[0][0]: s[0][1],] = 1
             
             # create an image that only shows the region we are interested in
-            section = mask*segmented_image
-
+            section = image*mask
+            segmented_section = segment_image(section)
+            # show_image(section)
             # now project the point cloud only on our area of interest
+            # print(cam_matrix, trans, rot)
+            # print(points)
+            # print(point)
+            # print(np.array([np.array(p) for p in points]))
+            # show_image(np.array(points), grayscale=True)
 
-            points = segment_pointcloud(points, section, cam_matrix, trans, rot)
-            poke_position = np.mean(points, axis=0)
-            return poke_position, points
+            p = segment_pointcloud(points, segmented_section, cam_matrix, trans, rot)
+            
+            if len(p) > 0:
+                p_temp = np.array([np.array(list(point)) for point in p])
+                # poke_position = np.mean(p[:,0:3], axis=0)
+                poke_position = np.mean(p_temp, axis=0)
+                # poke_position = [tuple(poke_position)]
+                print("got a point")
+                # print(poke_position)
+                # print(p)
+                return (poke_position, p)
+    print("got no points")
+    return (None, None)
+
         
-    return points
 def check_closed():
     # edit this using the teachable machine model
     return False
@@ -104,9 +121,9 @@ class PointcloudProcess:
         self.points_pub = rospy.Publisher(points_pub_topic, PointCloud2, queue_size=10)
         self.image_pub = rospy.Publisher('segmented_image', Image, queue_size=10)
         # additional topics
-        self.section_pub = rospy.Publisher('segmented_section', Image, queue_size=10)
+        self.section_pub = rospy.Publisher('segmented_section', PointCloud2, queue_size=10)
 
-        self.poking_pos_pub = rospy.Publisher(poke_position_topic, Image, queue_size=10)
+        self.poking_pos_pub = rospy.Publisher('poke_position', Vector3, queue_size=10)
 
         ts = message_filters.ApproximateTimeSynchronizer([points_sub, image_sub, caminfo_sub],
                                                           10, 0.1, allow_headerless=True)
@@ -147,13 +164,27 @@ class PointcloudProcess:
                    points_msg.header.stamp.secs)
             # 
             # self.image_pub.publish(image)
-
+            # print(trans, rot)
+            # print(len(isolate_section(points, image, info, 
+            #     np.array(trans), np.array(rot))))
             poking_point, section = isolate_section(points, image, info, 
                 np.array(trans), np.array(rot))
-            section_msg = numpy_to_pc2_msg(section)
-            self.section_pub.publish(section_msg)
+            # print(poking_point, section)
+            print(section)
+            if section is not None:
+                section_msg = numpy_to_pc2_msg(section)
+                self.section_pub.publish(section_msg)
 
-            self.poking_pos_pub.publish(poking_point)
+            if poking_point is not None:
+                print(poking_point)
+                print(section[0])
+                p_point = Vector3()
+                p_point.x = poking_point[0]
+                p_point.y = poking_point[1]
+                p_point.z = poking_point[2]
+                # p_point.data = poking_point
+
+                self.poking_pos_pub.publish(p_point)
         # print("no messages")
             
 
@@ -170,7 +201,7 @@ def main():
                                 CAM_INFO_TOPIC, POINTS_PUB_TOPIC,
                                 POKE_POSITION_TOPIC)
     r = rospy.Rate(1000)
-    print('hello')
+    # print('hello')
     while not rospy.is_shutdown():
         process.publish_once_from_queue()
         r.sleep()

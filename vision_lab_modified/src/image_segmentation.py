@@ -254,7 +254,7 @@ def segment_image(img):
 
     # perform thresholding segmentation
     # binary = threshold_segment_naive(to_grayscale(img), 150, 200).astype(np.uint8)
-    n_clusters = 4
+    n_clusters = 2
     # perform clustering segmentation.  
     # binary = cluster_segment(img, n_clusters).astype(np.uint8)
 
@@ -272,7 +272,7 @@ def segment_image(img):
 
     if np.mean(binary) > 0.5:
         binary = 1 - binary 
-    show_image(binary, "clustered")
+    # show_image(binary, "clustered")
     
     return binary
 
@@ -326,11 +326,12 @@ def check_for_close():
     # return True
     return False
 
-def discretize(image, n= 10):
-
-    h, w  = image.shape
+def discretize(image, n= 5):
+    # print(image.shape)
+    # print(image[0])
+    h, w, _  = image.shape
     size = h//n
-    sections = [(((i-1)*size, i*size), image[(i-1)*size:i*size, : ]) for i in range(1 , n+1)]
+    sections = [(((i-1)*size, i*size), image[(i-1)*size:i*size, : , : ]) for i in range(1 , n+1)]
     # sections = np.array(sections)
     return sections
     
