@@ -46,7 +46,8 @@ def isolate_object_of_interest(points, image, cam_matrix, trans, rot):
     points = segment_pointcloud(points, segmented_image, cam_matrix, trans, rot)
     return points
 
-
+def isolate_working_space(image):
+    return segment_image(image, 2)
 def isolate_section(points, image, cam_matrix, trans, rot):
     sections = discretize(image)
     
@@ -158,6 +159,9 @@ class PointcloudProcess:
             # image = image_mask*image
             # show_image(image)
             # points = segment_pointcloud(points, image, info, trans, rot)
+            work_area = isolate_working_space(image)
+            image = work_area * image
+            self.seg_image_pub.publish(work_area)
             
             points = isolate_object_of_interest(points, image, info, 
                 np.array(trans), np.array(rot))

@@ -250,12 +250,12 @@ def cluster_segment(img, n_clusters, random_state=0):
 def to_grayscale(rgb_img):
     return np.dot(rgb_img[... , :3] , [0.299 , 0.587, 0.114])
 
-def segment_image(img): 
+def segment_image(img, n_clusters = 2): 
     # ONLY USE ONE SEGMENTATION METHOD
 
     # perform thresholding segmentation
     # binary = threshold_segment_naive(to_grayscale(img), 150, 200).astype(np.uint8)
-    n_clusters = 4
+    
     # perform clustering segmentation.  
     # binary = cluster_segment(img, n_clusters).astype(np.uint8)
 
