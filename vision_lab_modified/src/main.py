@@ -160,8 +160,13 @@ class PointcloudProcess:
             # show_image(image)
             # points = segment_pointcloud(points, image, info, trans, rot)
             work_area = isolate_working_space(image)
-            image = work_area * image
-            self.seg_image_pub.publish(work_area)
+            # print(work_area)
+            temp = np.zeros(image.shape)
+            for i in range(work_area.shape[0]):
+                for j in range(work_area.shape[1]):
+                    temp[i, j] = np.ones(3)*work_area[i][j]
+            show_image(temp*image)
+            self.seg_image_pub.publish(temp*image)
             
             points = isolate_object_of_interest(points, image, info, 
                 np.array(trans), np.array(rot))
