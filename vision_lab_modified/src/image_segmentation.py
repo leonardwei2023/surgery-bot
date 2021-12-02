@@ -226,6 +226,7 @@ def cluster_segment(img, n_clusters, random_state=0):
     # Downsample img by a factor of 2 first using the mean to speed up K-means
     img_d = cv2.resize(img, dsize=(img.shape[1]/2, img.shape[0]/2), interpolation=cv2.INTER_NEAREST)
 
+    img_d = cv2.GaussianBlur(img_d, (5, 5), 0)
     # TODO: Generate a clustered image using K-means
 
     # first convert our 3-dimensional img_d array to a 2-dimensional array
@@ -254,7 +255,7 @@ def segment_image(img):
 
     # perform thresholding segmentation
     # binary = threshold_segment_naive(to_grayscale(img), 150, 200).astype(np.uint8)
-    n_clusters = 2
+    n_clusters = 4
     # perform clustering segmentation.  
     # binary = cluster_segment(img, n_clusters).astype(np.uint8)
 
@@ -308,7 +309,7 @@ def test_cluster(img, n_clusters):
     # cv2.imwrite(IMG_DIR + "/cluster.jpg", clusters)
     # clusters = cv2.imread(IMG_DIR + '/cluster.jpg')
     # show_image(clusters, title='cluster')
-    sections = discretize(img, n=10)
+    sections = discretize(img, n=5)
     for i, s in enumerate(sections):
         show_image(s, title="section{}".format(i))
         
@@ -326,7 +327,7 @@ def check_for_close():
     # return True
     return False
 
-def discretize(image, n= 5):
+def discretize(image, n= 2):
     # print(image.shape)
     # print(image[0])
     h, w, _  = image.shape

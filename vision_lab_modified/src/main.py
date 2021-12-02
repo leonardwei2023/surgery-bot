@@ -63,14 +63,9 @@ def isolate_section(points, image, cam_matrix, trans, rot):
             
             # create an image that only shows the region we are interested in
             section = image*mask
-            segmented_section = segment_image(section)
             # show_image(section)
-            # now project the point cloud only on our area of interest
-            # print(cam_matrix, trans, rot)
-            # print(points)
-            # print(point)
-            # print(np.array([np.array(p) for p in points]))
-            # show_image(np.array(points), grayscale=True)
+            segmented_section = segment_image(section)
+            # show_image(segmented_section)
 
             p = segment_pointcloud(points, segmented_section, cam_matrix, trans, rot)
             
@@ -120,7 +115,9 @@ class PointcloudProcess:
         
         self.points_pub = rospy.Publisher(points_pub_topic, PointCloud2, queue_size=10)
         self.image_pub = rospy.Publisher('segmented_image', Image, queue_size=10)
+
         # additional topics
+        self.seg_image_pub = rospy.Publisher('segmented_section', Image, queue_size=10)
         self.section_pub = rospy.Publisher('segmented_section', PointCloud2, queue_size=10)
 
         self.poking_pos_pub = rospy.Publisher('poke_position', Vector3, queue_size=10)
@@ -133,7 +130,7 @@ class PointcloudProcess:
     def callback(self, points_msg, image, info):
     
         try:
-            intrinsic_matrix = get_camera_matrix(info)
+            intrinsic_matrix = get_camera_matrix(info)            
             rgb_image = ros_numpy.numpify(image)
             points = ros_numpy.numpify(points_msg)
         except Exception as e:
@@ -145,6 +142,7 @@ class PointcloudProcess:
     def publish_once_from_queue(self):
         if self.messages:
             points, image, info = self.messages.pop()
+
             try:
 
                 trans, rot = self.listener.lookupTransform(
@@ -156,20 +154,19 @@ class PointcloudProcess:
                     tf.ConnectivityException, 
                     tf.ExtrapolationException):
                 return
+            # image_mask = segment_image(image)
+            # image = image_mask*image
+            # show_image(image)
+            # points = segment_pointcloud(points, image, info, trans, rot)
+            
             points = isolate_object_of_interest(points, image, info, 
                 np.array(trans), np.array(rot))
             points_msg = numpy_to_pc2_msg(points)
             self.points_pub.publish(points_msg)
             print("Published segmented pointcloud at timestamp:",
                    points_msg.header.stamp.secs)
-            # 
-            # self.image_pub.publish(image)
-            # print(trans, rot)
-            # print(len(isolate_section(points, image, info, 
-            #     np.array(trans), np.array(rot))))
             poking_point, section = isolate_section(points, image, info, 
                 np.array(trans), np.array(rot))
-            # print(poking_point, section)
             print(section)
             if section is not None:
                 section_msg = numpy_to_pc2_msg(section)
@@ -182,7 +179,6 @@ class PointcloudProcess:
                 p_point.x = poking_point[0]
                 p_point.y = poking_point[1]
                 p_point.z = poking_point[2]
-                # p_point.data = poking_point
 
                 self.poking_pos_pub.publish(p_point)
         # print("no messages")
