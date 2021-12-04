@@ -250,7 +250,7 @@ def cluster_segment(img, n_clusters, random_state=0):
 def to_grayscale(rgb_img):
     return np.dot(rgb_img[... , :3] , [0.299 , 0.587, 0.114])
 
-def segment_image(img, n_clusters = 2): 
+def segment_image(img, n_clusters = 3): 
     # ONLY USE ONE SEGMENTATION METHOD
 
     # perform thresholding segmentation
@@ -271,7 +271,7 @@ def segment_image(img, n_clusters = 2):
     
     binary = cluster_segment(img, n_clusters).astype(np.uint8)
 
-    if np.mean(binary) > 0.5:
+    if binary[binary.shape[0]-1, binary.shape[1]-1] > 0:
         binary = 1 - binary 
     # show_image(binary, "clustered")
     
@@ -327,7 +327,7 @@ def check_for_close():
     # return True
     return False
 
-def discretize(image, n= 2):
+def discretize(image, n= 4):
     # print(image.shape)
     # print(image[0])
     h, w, _  = image.shape

@@ -51,7 +51,7 @@ def isolate_working_space(image):
 def isolate_section(points, image, cam_matrix, trans, rot):
     sections = discretize(image)
     
-    for s in sections:
+    for s in sections[1:]:
         # s is in the form of ((start, end), pixel values)
         # print(s)
         # check if this section is closed/sutured
@@ -118,7 +118,7 @@ class PointcloudProcess:
         self.image_pub = rospy.Publisher('segmented_image', Image, queue_size=10)
 
         # additional topics
-        self.seg_image_pub = rospy.Publisher('segmented_section', Image, queue_size=10)
+        self.seg_image_pub = rospy.Publisher('segmented_workspace', Image, queue_size=10)
         self.section_pub = rospy.Publisher('segmented_section', PointCloud2, queue_size=10)
 
         self.poking_pos_pub = rospy.Publisher('poke_position', Vector3, queue_size=10)
@@ -155,20 +155,17 @@ class PointcloudProcess:
                     tf.ConnectivityException, 
                     tf.ExtrapolationException):
                 return
-            # image_mask = segment_image(image)
-            # image = image_mask*image
-            # show_image(image)
-            # points = segment_pointcloud(points, image, info, trans, rot)
+
             work_area = isolate_working_space(image)
+            temp = cv2.cvtColor(work_area, cv2.COLOR_GRAY2RGB)
+
             # print(work_area)
-            temp = np.zeros(image.shape)
-            for i in range(work_area.shape[0]):
-                for j in range(work_area.shape[1]):
-                    temp[i, j] = np.ones(3)*work_area[i][j]
-            show_image(temp*image)
-            self.seg_image_pub.publish(temp*image)
-            
-            points = isolate_object_of_interest(points, image, info, 
+            # show_image(temp*image)
+            msg = self._bridge.cv2_to_imgmsg(temp*image, "rgb8")
+
+            self.seg_image_pub.publish(msg)
+            points = segment_pointcloud(points, work_area, info, np.array(trans), np.array(rot))
+            points = isolate_object_of_interest(points, temp, info, 
                 np.array(trans), np.array(rot))
             points_msg = numpy_to_pc2_msg(points)
             self.points_pub.publish(points_msg)
@@ -176,14 +173,14 @@ class PointcloudProcess:
                    points_msg.header.stamp.secs)
             poking_point, section = isolate_section(points, image, info, 
                 np.array(trans), np.array(rot))
-            print(section)
+            # print(section)
             if section is not None:
                 section_msg = numpy_to_pc2_msg(section)
                 self.section_pub.publish(section_msg)
 
             if poking_point is not None:
-                print(poking_point)
-                print(section[0])
+                # print(poking_point)
+                # print(section[0])
                 p_point = Vector3()
                 p_point.x = poking_point[0]
                 p_point.y = poking_point[1]
@@ -205,7 +202,8 @@ def main():
     process = PointcloudProcess(POINTS_TOPIC, RGB_IMAGE_TOPIC,
                                 CAM_INFO_TOPIC, POINTS_PUB_TOPIC,
                                 POKE_POSITION_TOPIC)
-    r = rospy.Rate(1000)
+    # r = rospy.Rate(1000)
+    r = rospy.Rate(100)
     # print('hello')
     while not rospy.is_shutdown():
         process.publish_once_from_queue()
