@@ -1,0 +1,15 @@
+<launch>
+    <!-- Enable realsense camera -->
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch" />
+
+    <!-- Enable usb camera -->
+    <include file="$(find vision)/launch/run_cam.launch" />
+
+    <!-- Launch ar tracking for relavant cameras -->
+    <include file="$(find vision)/launch/ar_track_realsense.launch" />
+    <!-- <include file="$(find vision)/launch/ar_track_head_camera.launch" /> -->
+    <include file="$(find vision)/launch/ar_track_usb.launch" />
+
+    <!-- Run main.py -->
+    <!-- <node pkg="vision" type="main.py" name="vision"> -->
+</launch>
