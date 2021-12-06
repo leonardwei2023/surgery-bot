@@ -87,10 +87,6 @@ def main():
     realsense_transform = get_transform("camera_link", "usb_cam")
     raw_input("Calibration finished...\nPress <Enter> to continue...")
 
-    baxter_table_transform = get_transform("table", "camera_color_frame")
-
-
-
 if __name__ == '__main__':
     rospy.init_node('moveit_node')
     main()
