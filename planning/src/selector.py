@@ -16,7 +16,7 @@ class Selector():
         """
         Constructor
         """
-        self._sub = rospy.Subscriber("clicked_point", PointStamped, self.callback)
+        self._sub = None
         self._total = 0
         self._points = []
 
@@ -39,8 +39,10 @@ class Selector():
         Makes a querys
         """
         self._total = int(raw_input("Please enter the number of sutures you would like to perform...\n"))
+        self._sub = rospy.Subscriber("clicked_point", PointStamped, self.callback)
         while(len(self._points) < self._total): continue
         self._sub.unregister()
+        self._sub = None
         print("Collected {} points!".format(len(self._points)))
 
 def main():
@@ -48,6 +50,9 @@ def main():
     test = Selector()
     test.query()
     print(test.get_points())
+    test.clear()
+    print("Selector cleared!")
+    test.query()
 
 if __name__ == '__main__':
     main()
