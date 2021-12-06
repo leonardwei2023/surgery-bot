@@ -73,9 +73,7 @@ def get_transform(source_frame, target_frame):
             pass
         else:
             print("Transform from {} to {} has been found!".format(source_frame, target_frame))
-            print(trans.transform.translation.x, \
-                  trans.transform.translation.y, \
-                  trans.transform.translation.z)
+            print(trans.transform)
             return trans
         r.sleep()
 
@@ -87,8 +85,11 @@ def main():
     # Find realsense transform
     # move_to_realsense()
     realsense_transform = get_transform("camera_link", "usb_cam")
+    raw_input("Calibration finished...\nPress <Enter> to continue...")
 
-    
+    baxter_table_transform = get_transform("table", "camera_color_frame")
+
+
 
 if __name__ == '__main__':
     rospy.init_node('moveit_node')
