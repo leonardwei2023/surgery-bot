@@ -32,7 +32,11 @@ from cv_bridge import CvBridge
 
 from image_segmentation import segment_image, discretize, show_image
 from pointcloud_segmentation import segment_pointcloud
-
+#############################################
+from geometry_msgs.msg import Vector3
+import numpy as np
+import rospy
+from vision.srv import Poke  # Service type
 
 def get_camera_matrix(camera_info_msg):
     # TODO: Return the camera intrinsic matrix as a 3x3 numpy array
@@ -103,7 +107,7 @@ class PointcloudProcess:
                        points_pub_topic,
                        poke_position_topic):
 
-        self.num_steps = 0
+        self.poke_position = Vector3()
 
         self.messages = deque([], 5)
         self.pointcloud_frame = None
@@ -126,7 +130,20 @@ class PointcloudProcess:
         ts = message_filters.ApproximateTimeSynchronizer([points_sub, image_sub, caminfo_sub],
                                                           10, 0.1, allow_headerless=True)
         
+
         ts.registerCallback(self.callback)
+
+    def publish_poke_position(self):
+        pub = rospy.Publisher(
+            '/poke_position', Vector3, queue_size=50)
+        
+        # get poke_position x, y, z
+        cmd = self.poke_position
+        # Publish to cmd_vel at 5 Hz
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            pub.publish(cmd)  # Publish to cmd_vel
+            rate.sleep()  # Sleep until 
 
     def callback(self, points_msg, image, info):
     
@@ -181,12 +198,14 @@ class PointcloudProcess:
             if poking_point is not None:
                 # print(poking_point)
                 # print(section[0])
-                p_point = Vector3()
-                p_point.x = poking_point[0]
-                p_point.y = poking_point[1]
-                p_point.z = poking_point[2]
+                # p_point = Vector3()
+                self.poke_position.x = poking_point[0]
+                self.poke_position.y = poking_point[1]
+                self.poke_position.z = poking_point[2]
 
-                self.poking_pos_pub.publish(p_point)
+                # self.poking_pos_pub.publish(p_point)
+
+    
 
 def main():
     CAM_INFO_TOPIC = '/camera/color/camera_info'
@@ -199,13 +218,25 @@ def main():
     process = PointcloudProcess(POINTS_TOPIC, RGB_IMAGE_TOPIC,
                                 CAM_INFO_TOPIC, POINTS_PUB_TOPIC,
                                 POKE_POSITION_TOPIC)
+
+    
+    # Initialize the server node for poke position
+    rospy.init_node('poke_positoin_server')
+    # Register service
+    rospy.Service('Poke pos server',  # Service name
+        Poke,  # Service type
+        process.publish_poke_position  # Service callback
+    )
+    rospy.loginfo('Running patrol server...')
+    rospy.spin() # Spin the node until Ctrl-C
+
     # r = rospy.Rate(1000)
     r = rospy.Rate(100)
-    # print('hello')
+    
     while not rospy.is_shutdown():
         process.publish_once_from_queue()
         r.sleep()
-
+    
 if __name__ == '__main__':
     
     main()
