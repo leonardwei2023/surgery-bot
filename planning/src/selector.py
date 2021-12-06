@@ -12,11 +12,14 @@ class Selector():
 
     Extracts points from point cloud when published by rviz's Publish Point function
     """
-    def __init__(self):
+    def __init__(self, topic):
         """
         Constructor
+
+        Inputs:
+        topic: topic with type point
         """
-        self._sub = None
+        self._topic = topic
         self._total = 0
         self._points = []
 
@@ -31,7 +34,7 @@ class Selector():
         return self._points
 
     def callback(self, message):
-        self._points.append(message.point)
+        self._points.append(message)
         print("Entry {}:\n{}".format(len(self._points), message.point))
 
     def query(self):
@@ -39,15 +42,14 @@ class Selector():
         Makes a querys
         """
         self._total = int(raw_input("Please enter the number of sutures you would like to perform...\n"))
-        self._sub = rospy.Subscriber("clicked_point", PointStamped, self.callback)
+        sub = rospy.Subscriber(self._topic, PointStamped, self.callback)
         while(len(self._points) < self._total): continue
-        self._sub.unregister()
-        self._sub = None
+        sub.unregister()
         print("Collected {} points!".format(len(self._points)))
 
 def main():
     rospy.init_node("selection")
-    test = Selector()
+    test = Selector("clicked_point")
     test.query()
     print(test.get_points())
     test.clear()
