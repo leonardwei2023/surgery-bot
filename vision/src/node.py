@@ -36,7 +36,7 @@ from pointcloud_segmentation import segment_pointcloud
 from geometry_msgs.msg import Vector3
 import numpy as np
 import rospy
-from vision.srv import Poke  # Service type
+from vision.srv import Poke # Service type
 
 def get_camera_matrix(camera_info_msg):
     # TODO: Return the camera intrinsic matrix as a 3x3 numpy array
