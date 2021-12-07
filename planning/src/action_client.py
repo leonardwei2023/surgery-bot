@@ -25,7 +25,7 @@ def main():
     
     #Set parameters for the planner    
     goal.request.group_name = 'both_arms'
-    goal.request.num_planning_attempts = 1
+    goal.request.num_planning_attempts = 3
     goal.request.allowed_planning_time = 5.0
     
     #Define the workspace in which the planner will search for solutions

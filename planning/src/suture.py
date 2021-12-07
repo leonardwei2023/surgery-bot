@@ -34,23 +34,43 @@ class SurgeryRobot():
         self._left_gripper = gripper.Gripper('left')
         self._right_gripper = gripper.Gripper('right')
 
+        # TODO set rest poses 
         self._left_rest_pose = PoseStamped()
-        self._left_rest_pose.pose.position.x
-        self._left_rest_pose.pose.position.y
-        self._left_rest_pose.pose.position.z
-        self._left_rest_pose.pose.orientation.x
-        self._left_rest_pose.pose.orientation.y
-        self._left_rest_pose.pose.orientation.z
-        self._left_rest_pose.pose.orientation.w
+        self._left_rest_pose.pose.position.x = 0.7
+        self._left_rest_pose.pose.position.y = 0.0
+        self._left_rest_pose.pose.position.z = 0.25
+        # self._left_rest_pose.pose.orientation.x = 0.453
+        # self._left_rest_pose.pose.orientation.y = 0.571
+        # self._left_rest_pose.pose.orientation.z = -0.464
+        # self._left_rest_pose.pose.orientation.w = 0.503
+        # self._left_rest_pose.pose.orientation.x = 0.453
+        # self._left_rest_pose.pose.orientation.y = 0.571
+        # self._left_rest_pose.pose.orientation.z = -0.464
+        self._left_rest_pose.pose.orientation.y = 1.0
 
         self._right_rest_pose = PoseStamped()
-        self._right_rest_pose.pose.position.x
-        self._right_rest_pose.pose.position.y
-        self._right_rest_pose.pose.position.z
-        self._right_rest_pose.pose.orientation.x
-        self._right_rest_pose.pose.orientation.y
-        self._right_rest_pose.pose.orientation.z
-        self._right_rest_pose.pose.orientation.w
+        self._right_rest_pose.pose.position.x = 0.692
+        self._right_rest_pose.pose.position.y = 0.019
+        self._right_rest_pose.pose.position.z =  0.143
+        self._right_rest_pose.pose.orientation.x = 0.013
+        self._right_rest_pose.pose.orientation.y = 0.798
+        self._right_rest_pose.pose.orientation.z = 0.599
+        self._right_rest_pose.pose.orientation.w = 0.069
+
+        self._left_calibrate_table_pose = PoseStamped()
+        self._left_calibrate_table_pose.pose.position.x = 0.6
+        self._left_calibrate_table_pose.pose.position.y = 0.0
+        self._left_calibrate_table_pose.pose.position.z = 0.25
+        self._left_calibrate_table_pose.pose.orientation.y = -1.0
+
+        self._left_calibrate_camera_pose = PoseStamped()
+        self._left_calibrate_camera_pose.pose.position.x = 0.659
+        self._left_calibrate_camera_pose.pose.position.y = 0.246
+        self._left_calibrate_camera_pose.pose.position.z = 0.158
+        self._left_calibrate_camera_pose.pose.orientation.x = 0.693
+        self._left_calibrate_camera_pose.pose.orientation.y = -0.119
+        self._left_calibrate_camera_pose.pose.orientation.z = 0.697
+        self._left_calibrate_camera_pose.pose.orientation.w = 0.146
     
     def move_arm(self, planner, pose):
         """
@@ -58,20 +78,23 @@ class SurgeryRobot():
 
         Inputs:
         planner: arm planner
-        pose: goal pose (geometry_msgs/Pose)
+        pose: goal pose (geometry_msgs/PoseStamped)
         """
         while not rospy.is_shutdown():
-            # Generate goal message
-            goal = pose
-            goal.header.frame_id = "base"
+            try:
+                goal = pose
+                goal.header.frame_id = "base"
 
-            # Generate plan
-            plan = planner.plan_to_pose(goal, [])
+                # Might have to edit this . . . 
+                plan = planner.plan_to_pose(goal, [])
 
-            # Execute plan
-            raw_input("Press <Enter> to move to goal pose...\n")
-            if not planner.execute_plan(plan):
-                raise Exception("Execution failed")
+                raw_input("Press <Enter> to move...")
+                if not planner.execute_plan(plan):
+                    raise Exception("Execution failed")
+            except Exception as e:
+                print e
+            else:
+                break
 
     def move_to_rest(self):
         self.move_arm(self._left_planner, self._left_rest_pose)
@@ -88,6 +111,9 @@ class SurgeryRobot():
         """
         Calibrates operation area
         """
+        raw_input("Starting calibration...\nPress <Enter to continue...>")
+        self.move_arm(self._left_planner, self._left_calibrate_table_pose)
+        self.move_arm(self._left_planner, self._left_calibrate_camera_pose)
         print("Calibration successful")
 
     def generate_entry_exit_points(self, entry_point):
@@ -99,6 +125,7 @@ class SurgeryRobot():
         Entry point for suture
         Exit point for suture
         """
+        # TODO implement exit point generation
         return (None, None)
 
     def suture_entry(self, entry_point):
@@ -107,6 +134,7 @@ class SurgeryRobot():
         Inputs:
         entry_point: point of entyr as PointStamped
         """
+        # TODO: Figure out correct poses
         # Pose of entry
         entry_pose = PoseStamped()
         entry_pose.pose.position.x = entry_point.x
@@ -114,7 +142,7 @@ class SurgeryRobot():
         entry_pose.pose.position.z = entry_point.z
         entry_pose.pose.orientation.y = -1.0
 
-        # Pose of exit
+        # Pose of insert
         insert_pose = PoseStamped()
         insert_pose.pose.position.x = entry_point.x
         insert_pose.pose.position.y = entry_point.y
@@ -143,6 +171,7 @@ class SurgeryRobot():
         Inputs:
         grip_point: point to grip needle
         """
+        # TODO: Figure out correct poses
         # Pose of grip
         grip_pose = PoseStamped()
         grip_pose.pose.position.x = grip_point.x
@@ -191,6 +220,7 @@ def main():
                Press <Enter to continue... >")
     
     # Query user for input 
+    # TODO implement selector for recieve entry points
     entry_points = []
 
     # Perform sutures
@@ -201,5 +231,15 @@ def main():
         robot.suture_handoff()
     robot.move_to_rest()
 
+def test():
+    rospy.init_node('moveit_node')
+    robot = SurgeryRobot(0.6)
+
+    # robot.calibrate() 
+    # robot.calibrate_grippers()
+    robot.move_to_rest()   
+    
+
 if __name__ == '__main__':
-    main()
+    # main()
+    test()

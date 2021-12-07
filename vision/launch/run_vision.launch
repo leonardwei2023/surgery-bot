@@ -6,15 +6,17 @@
     <!-- <include file="$(find vision)/launch/run_cam.launch" /> -->
 
     <!-- Launch ar tracking for relavant camera -->
-    <!-- <include file="$(find vision)/launch/ar_track_realsense.launch" /> -->
+    <include file="$(find vision)/launch/ar_track_realsense.launch" />
     <!-- <include file="$(find vision)/launch/ar_track_head_camera.launch" /> -->
-    <include file="$(find vision)/launch/ar_track_left_arm_camera.launch" />
+    <!-- <include file="$(find vision)/launch/ar_track_left_arm_camera.launch" /> -->
     <!-- <include file="$(find vision)/launch/ar_track_usb.launch" /> -->
 
     <!-- Set up static transforms -->
-    <node name="table_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 ar_marker_1 table" />
-    <node name="realsense_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 ar_marker_0 camera_link" />
+    <!-- <node name="table_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 ar_marker_1 table" /> -->
+    <!-- <node name="realsense_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 ar_marker_0 camera_link" /> -->
+    <node name="realsense_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 1.57 reference/base ar_marker_0 " />
+
 
     <!-- Run main.py -->
-    <!-- <node pkg="vision" type="main.py" name="vision"> -->
+    <node pkg="vision" type="main.py" name="vision" />
 </launch>

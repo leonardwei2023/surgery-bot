@@ -84,7 +84,7 @@ def main():
 
     # Find realsense transform
     # move_to_realsense()
-    realsense_transform = get_transform("camera_link", "usb_cam")
+    realsense_transform = get_transform("camera_link", "left")
     raw_input("Calibration finished...\nPress <Enter> to continue...")
 
 if __name__ == '__main__':
