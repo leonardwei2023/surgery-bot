@@ -1,8 +1,0 @@
-<launch>
-  <!-- Start up vision -->
-  <include file="$(find vision_lab_modified)/launch/vision.launch"/>
-
-  <!-- Start up Baxter -->
-  <include file="$(find planning)/launch/baxter_moveit_gui_noexec.launch"/
-
-</launch>

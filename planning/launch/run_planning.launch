@@ -1,0 +1,7 @@
+<launch>
+  <!-- Start up Baxter -->
+  <include file="$(find planning)/launch/baxter_moveit_gui_noexec.launch"/>
+
+  <!-- Start suture -->
+  <node pkg="planning" type="suture.py" name="suture" />
+</launch>
