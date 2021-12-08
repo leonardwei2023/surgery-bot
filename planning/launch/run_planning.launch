@@ -1,7 +1,16 @@
 <launch>
   <!-- Start up Baxter -->
-  <include file="$(find planning)/launch/baxter_moveit_gui_noexec.launch"/>
+  <!-- rosrun baxter_interface joint_trajectory_action_server.py -->
+  <node pkg="baxter_interface" type="joint_trajectory_action_server.py" name="suture_trajectory_action_server"/>
+  <!-- roslaunch baxter_moveit_config demo_baxter.launch right_electric_gripper:=true left_electric_gripper:=true -->
+  <include file="$(find planning)/launch/suture_baxter.launch">
+    <arg name="left_electric_gripper" value="true" />
+    <arg name="right_electric_gripper" value="true" />
+  </include>
+  
+  <!-- Start up vision -->
+  <!-- <include file="$(find vision)/launch/run_vision.launch" /> -->
 
   <!-- Start suture -->
-  <node pkg="planning" type="suture.py" name="suture" />
+  <!-- <node pkg="planning" type="suture.py" name="suture" /> -->
 </launch>

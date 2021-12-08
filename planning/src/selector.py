@@ -34,7 +34,7 @@ class Selector():
         return self._points
 
     def callback(self, message):
-        self._points.append(message)
+        self._points.append(message.point)
         print("Entry {}:\n{}".format(len(self._points), message.point))
 
     def query(self):
