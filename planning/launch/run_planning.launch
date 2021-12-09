@@ -7,7 +7,9 @@
     <arg name="left_electric_gripper" value="true" />
     <arg name="right_electric_gripper" value="true" />
   </include>
-  
+
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="virtual_joint_broadcaster_1" args="0 0 0 0 0 0 world base" /> -->
+
   <!-- Start up vision -->
   <!-- <include file="$(find vision)/launch/run_vision.launch" /> -->
 

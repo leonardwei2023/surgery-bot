@@ -30,7 +30,11 @@ class SurgeryRobot():
         
         self._left_planner = PathPlanner("left_arm")
         self._right_planner = PathPlanner("right_arm")
-
+        _pose = PoseStamped()
+        _pose.header.frame_id = "reference/base"
+        _pose.pose.position.x = 0.5
+        _pose.pose.position.z = -0.35
+        self._left_planner.add_box_obstacle([1, 2, 0.01], "left_table", _pose)
         self._left_gripper = gripper.Gripper('left')
         self._right_gripper = gripper.Gripper('right')
 
@@ -73,15 +77,25 @@ class SurgeryRobot():
         planner: arm planner
         pose: goal pose (geometry_msgs/PoseStamped)
         """
+        orien_const = OrientationConstraint()
+        orien_const.link_name = "left_gripper"
+        orien_const.header.frame_id = "base"
+        orien_const.x = 0.7071068
+        orien_const.y =  0.7071068
+        orien_const.absolute_x_axis_tolerance = 0.1
+        orien_const.absolute_y_axis_tolerance = 0.1
+        orien_const.absolute_z_axis_tolerance = 0.1
+        orien_const.weight = 1.0
+
         limit = 50
         raw_input("Press <Enter> to try to move...")
         while not rospy.is_shutdown() and limit > 0:
             try:
                 goal = pose
-                goal.header.frame_id = "reference/base"
+                goal.header.frame_id = "base"
 
                 # Might have to edit this . . . 
-                plan = planner.plan_to_pose(goal, [])
+                plan = planner.plan_to_pose(goal, [orien_const])
 
                 if not planner.execute_plan(plan):
                     raise Exception("Execution failed")
@@ -116,13 +130,18 @@ class SurgeryRobot():
         Entry point for suture
         Exit point for suture
         """
+        #offset cuz baxter trash
+        entry_point.x -= 0.1
+        entry_point.z -= .15
+        # entry_point.y
+
         exit_point = Point()
         exit_point.x = entry_point.x
         exit_point.y = entry_point.y - (2/3) * self._needle_length
-        exit_point.z = entry_point.z + .3
+        exit_point.z = entry_point.z
 
-        entry_point.y += self._needle_length/3
-        entry_point.z += .3
+        entry_point.y
+        entry_point.z
         return entry_point, exit_point
 
     def suture_entry(self, entry_point):
@@ -136,36 +155,44 @@ class SurgeryRobot():
         # Pose of entry
         entry_pose = PoseStamped()
         entry_pose.pose.position.x = entry_point.x
-        entry_pose.pose.position.y = entry_point.y + self._needle_length/2
+        entry_pose.pose.position.y = entry_point.y + .35 #+ (2/3) * self._needle_length * 10
         entry_pose.pose.position.z = entry_point.z
-        entry_pose.pose.orientation.y = 1.0
-        # entry_pose.pose.orientation.x = 0.707
-        # entry_pose.pose.orientation.y = 0.707
+        entry_pose.pose.orientation.x = 0.7071068
+        entry_pose.pose.orientation.y =  0.7071068
+        # entry_pose.pose.orientation.z = 0.008
+        # entry_pose.pose.orientation.w = -0.004
 
         # Pose of insert
         insert_pose = PoseStamped()
         insert_pose.pose.position.x = entry_point.x
-        insert_pose.pose.position.y = entry_point.y 
+        insert_pose.pose.position.y = entry_point.y + .1
         insert_pose.pose.position.z = entry_point.z
-        entry_pose.pose.orientation.x = 0.707
-        entry_pose.pose.orientation.y = 0.707
+        insert_pose.pose.orientation.x = 0.7071068
+        insert_pose.pose.orientation.y =  0.7071068 
+        
 
         # Pose of release
         release_pose = PoseStamped()
         release_pose.pose.position.x = insert_pose.pose.position.x
         release_pose.pose.position.y = insert_pose.pose.position.y
-        release_pose.pose.position.z = insert_pose.pose.position.z + 0.1
-        entry_pose.pose.orientation.x = 0.707
-        entry_pose.pose.orientation.y = 0.707
+        release_pose.pose.position.z = insert_pose.pose.position.z + .25
+        release_pose.pose.orientation.x = 0.7071068
+        release_pose.pose.orientation.y =  0.7071068 
 
         # Execute entry
         move_left_arm = lambda pose: self.move_arm(self._left_planner, pose)
-        move_left_arm(self._left_rest_pose)
+        
+        # move_left_arm(self._left_rest_pose)
         move_left_arm(entry_pose)
+        print("moved left arm to suture")
         move_left_arm(insert_pose)
+        print("insert needle")
         self._left_gripper.open()
+        print("release needle")
         move_left_arm(release_pose)
+        print("go to release position")
         move_left_arm(self._left_rest_pose)
+        print("back to rest")
 
     def suture_exit(self, grip_point):
         """
@@ -177,31 +204,39 @@ class SurgeryRobot():
         # Pose of grip
         grip_pose = PoseStamped()
         grip_pose.pose.position.x = grip_point.x
-        grip_pose.pose.position.y = grip_point.y
+        grip_pose.pose.position.y = grip_point.y + (2/3) * self._needle_length * 10
         grip_pose.pose.position.z = grip_point.z
-        grip_pose.pose.orientation.y = -1.0
+        grip_pose.pose.orientation.x = 0.7071068
+        grip_pose.pose.orientation.y =  0.7071068
 
         # Pose of exit
         exit_pose = PoseStamped()
         exit_pose.pose.position.x = grip_point.x
-        exit_pose.pose.position.y = grip_point.y - self._needle_length/2
+        exit_pose.pose.position.y = grip_point.y
         exit_pose.pose.position.z = grip_point.z
-        exit_pose.pose.orientation.y = -1.0
+        exit_pose.pose.orientation.x = 0.7071068
+        exit_pose.pose.orientation.y =  0.7071068
 
         # Pose of release
         release_pose = PoseStamped()
         release_pose.pose.position.x = self._right_rest_pose.pose.position.x
         release_pose.pose.position.y = self._right_rest_pose.pose.position.y - 0.1
         release_pose.pose.position.z = self._right_rest_pose.pose.position.z - 0.1
-        release_pose.pose.orientation.y = -1.0
+        release_pose.pose.orientation.x = 0.7071068
+        release_pose.pose.orientation.y =  0.7071068
 
         # Execute exit
         move_right_arm = lambda pose: self.move_arm(self._right_planner, pose)
         move_right_arm(self._right_rest_pose)
+        print("moved arm to rest position")
         move_right_arm(grip_pose)
+        print("moved towards the needle")
         self._right_gripper.close()
+        print("grip the needle")
         move_right_arm(exit_pose)
+        print("pull the needle out horizontaly")
         move_right_arm(release_pose)
+
 
     def suture_handoff(self):
         """
@@ -215,12 +250,15 @@ def main():
     robot = SurgeryRobot(0.29)
     
     # Calibrate Robot
-    # robot.calibrate_grippers()
-    # raw_input("Calibration succesful...\n \
-    #            Please load patient and needle...\n \
-    #            Press <Enter to continue... >")
+    robot.calibrate_grippers()
+    raw_input("Calibration succesful...\n \
+               Please load patient and needle...\n \
+               Press <Enter to continue... >")
+
+    robot._left_gripper.close()
     
     # Query user for input 
+    robot._left_gripper.close()
     robot._suture_selector.query()
     entry_points = robot._suture_selector.get_points()
 
@@ -234,7 +272,7 @@ def main():
 
 def test():
     rospy.init_node('moveit_node')
-    robot = SurgeryRobot(0.6)
+    robot = SurgeryRobot(0.8)
 
     # robot.calibrate() 
     robot.calibrate_grippers()

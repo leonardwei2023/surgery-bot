@@ -2,26 +2,19 @@
     <!-- Enable realsense camera -->
     <include file="$(find realsense2_camera)/launch/rs_camera.launch" />
 
-    <!-- Enable usb camera -->
-    <!-- <include file="$(find vision)/launch/run_cam.launch" /> -->
-
     <!-- Launch ar tracking for relavant camera -->
     <include file="$(find vision)/launch/ar_track_realsense.launch" />
-    <!-- <include file="$(find vision)/launch/ar_track_head_camera.launch" /> -->
     <!-- <include file="$(find vision)/launch/ar_track_left_arm_camera.launch" /> -->
     <!-- <include file="$(find vision)/launch/ar_track_usb.launch" /> -->
 
     <!-- Set up static transforms -->
-    <!-- <node name="table_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 ar_marker_1 table" /> -->
-    <!-- <node name="realsense_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 ar_marker_0 camera_link" /> -->
-    <!-- <node name="realsense_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 1.57 reference/base ar_marker_0 " /> -->
-    <!-- <node name="base_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 base reference/base" /> -->
-    <node name="ar_tag_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 -0.35 0 -1.57 1.57 ar_marker_0 reference/base" />
-    <!-- <node name="color_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 1.57 0 0 camera_link camera_color_frame" /> -->
-    <!-- <node name="realsense_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0  camera_link" /> -->
-    <!--  -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="virtual_joint_broadcaster_1" args="0 0 0 0 0 0 world base" /> -->
+    <node name="ar_tag_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args=".21 .01 -0.62 0 -1.57 1.57 ar_marker_0 base" />
+    <!-- left-right down-up forward-back -->
+    <!-- <node name="ar_tag_inter_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args=".22 -0.24 -0.78 0 0 0 ar_marker_0 intermediary" /> -->
+    <!-- <node name="inter_base_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 -1.57 1.57 intermediary base" /> -->
 
 
     <!-- Run main.py -->
-    <node pkg="vision" type="main.py" name="vision" />
+    <!-- <node pkg="vision" type="main.py" name="vision" /> -->
 </launch>
