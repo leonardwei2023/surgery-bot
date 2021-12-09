@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- Start up Baxter -->
+  <node pkg="baxter_interface" type="joint_trajectory_action_server.py" name="suture_trajectory_action_server"/>
+  <include file="$(find planning)/launch/suture_baxter.launch">
+    <arg name="left_electric_gripper" value="true" />
+  </include>
+
+</launch>

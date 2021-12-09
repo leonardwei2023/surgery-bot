@@ -1,0 +1,9 @@
+<launch>
+
+<!-- Setup ar tracking -->
+<include file="$(find vision)/launch/ar_track_realsense.launch" />
+
+<!-- Setup up ar_marker_0 transform to Baxter's base-->
+<node name="ar_marker_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args="0 0 -0.35 0 -1.57 1.57 ar_marker_0 base" />
+
+</launch>
