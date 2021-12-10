@@ -8,7 +8,7 @@
     <!-- <include file="$(find vision)/launch/ar_track_usb.launch" /> -->
 
     <!-- Set up static transforms -->
-    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="virtual_joint_broadcaster_1" args="0 0 0 0 0 0 world base" /> -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="virtual_joint_broadcaster_1" args="0 0 0 0 0 0 world base" />
     <node name="ar_tag_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args=".21 .01 -0.62 0 -1.57 1.57 ar_marker_0 base" />
     <!-- left-right down-up forward-back -->
     <!-- <node name="ar_tag_inter_transform_broadcaster" pkg="tf2_ros" type="static_transform_publisher" args=".22 -0.24 -0.78 0 0 0 ar_marker_0 intermediary" /> -->

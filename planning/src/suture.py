@@ -69,7 +69,7 @@ class SurgeryRobot():
         self._left_calibrate_camera_pose.pose.position.z = 0.158
         self._left_calibrate_camera_pose.pose.orientation.y = -1.0
     
-    def move_arm(self, planner, pose):
+    def move_arm(self, planner, pose, orient_const=[], prompt=False):
         """
         Moves arm
 
@@ -77,25 +77,16 @@ class SurgeryRobot():
         planner: arm planner
         pose: goal pose (geometry_msgs/PoseStamped)
         """
-        orien_const = OrientationConstraint()
-        orien_const.link_name = "left_gripper"
-        orien_const.header.frame_id = "base"
-        orien_const.x = 0.7071068
-        orien_const.y =  0.7071068
-        orien_const.absolute_x_axis_tolerance = 0.1
-        orien_const.absolute_y_axis_tolerance = 0.1
-        orien_const.absolute_z_axis_tolerance = 0.1
-        orien_const.weight = 1.0
 
         limit = 50
-        raw_input("Press <Enter> to try to move...")
+        if prompt == True:
+            raw_input("Press <Enter> to try to move...")
         while not rospy.is_shutdown() and limit > 0:
             try:
                 goal = pose
                 goal.header.frame_id = "base"
 
-                # Might have to edit this . . . 
-                plan = planner.plan_to_pose(goal, [orien_const])
+                plan = planner.plan_to_pose(goal, orient_const)
 
                 if not planner.execute_plan(plan):
                     raise Exception("Execution failed")
@@ -103,7 +94,7 @@ class SurgeryRobot():
                     return
             except Exception as e:
                 limit -= 1
-                print e
+                print(e)
             else:
                 limit -= 1
                 break
@@ -130,18 +121,16 @@ class SurgeryRobot():
         Entry point for suture
         Exit point for suture
         """
-        #offset cuz baxter trash
+        # Manual offset for pointcloud error
         entry_point.x -= 0.1
+        entry_point.y 
         entry_point.z -= .15
-        # entry_point.y
 
         exit_point = Point()
         exit_point.x = entry_point.x
-        exit_point.y = entry_point.y - (2/3) * self._needle_length
+        exit_point.y = entry_point.y - self._needle_length
         exit_point.z = entry_point.z
 
-        entry_point.y
-        entry_point.z
         return entry_point, exit_point
 
     def suture_entry(self, entry_point):
@@ -151,16 +140,13 @@ class SurgeryRobot():
         entry_point: point of entyr as PointStamped
         """
 
-        # TODO: Figure out correct poses
         # Pose of entry
         entry_pose = PoseStamped()
         entry_pose.pose.position.x = entry_point.x
-        entry_pose.pose.position.y = entry_point.y + .35 #+ (2/3) * self._needle_length * 10
+        entry_pose.pose.position.y = entry_point.y + .35
         entry_pose.pose.position.z = entry_point.z
         entry_pose.pose.orientation.x = 0.7071068
         entry_pose.pose.orientation.y =  0.7071068
-        # entry_pose.pose.orientation.z = 0.008
-        # entry_pose.pose.orientation.w = -0.004
 
         # Pose of insert
         insert_pose = PoseStamped()
@@ -180,8 +166,17 @@ class SurgeryRobot():
         release_pose.pose.orientation.y =  0.7071068 
 
         # Execute entry
-        move_left_arm = lambda pose: self.move_arm(self._left_planner, pose)
-        
+        orien_const = OrientationConstraint()
+        orien_const.link_name = "left_gripper"
+        orien_const.header.frame_id = "base"
+        orien_const.orientation.x = 0.7071068
+        orien_const.orientation.y = 0.7071068
+        orien_const.absolute_x_axis_tolerance = 0.1
+        orien_const.absolute_y_axis_tolerance = 0.1
+        orien_const.absolute_z_axis_tolerance = 0.1
+        orien_const.weight = 1.0
+        move_left_arm = lambda pose: self.move_arm(self._left_planner, pose, [orien_const])
+        print("move left arm to suture")
         # move_left_arm(self._left_rest_pose)
         move_left_arm(entry_pose)
         print("moved left arm to suture")
@@ -226,7 +221,16 @@ class SurgeryRobot():
         release_pose.pose.orientation.y =  0.7071068
 
         # Execute exit
-        move_right_arm = lambda pose: self.move_arm(self._right_planner, pose)
+        orien_const = OrientationConstraint()
+        orien_const.link_name = "left_gripper"
+        orien_const.header.frame_id = "base"
+        orien_const.orientation.x = 0.7071068
+        orien_const.orientation.y = 0.7071068
+        orien_const.absolute_x_axis_tolerance = 0.1
+        orien_const.absolute_y_axis_tolerance = 0.1
+        orien_const.absolute_z_axis_tolerance = 0.1
+        orien_const.weight = 1.0
+        move_right_arm = lambda pose: self.move_arm(self._left_planner, pose, [orien_const], prompt=True)
         move_right_arm(self._right_rest_pose)
         print("moved arm to rest position")
         move_right_arm(grip_pose)
@@ -236,7 +240,9 @@ class SurgeryRobot():
         move_right_arm(exit_pose)
         print("pull the needle out horizontaly")
         move_right_arm(release_pose)
-
+        print("moved to release pose")
+        move_right_arm(self._right_rest_pose)
+        print("moved arm to rest position")
 
     def suture_handoff(self):
         """
@@ -247,7 +253,7 @@ class SurgeryRobot():
 
 def main():
     rospy.init_node('moveit_node')
-    robot = SurgeryRobot(0.29)
+    robot = SurgeryRobot(0.6)
     
     # Calibrate Robot
     robot.calibrate_grippers()
@@ -272,13 +278,32 @@ def main():
 
 def test():
     rospy.init_node('moveit_node')
-    robot = SurgeryRobot(0.8)
+    robot = SurgeryRobot(0.6)
+    
+    # Query user for input 
+    robot._suture_selector.query()
+    entry_points = robot._suture_selector.get_points()
 
-    # robot.calibrate() 
-    robot.calibrate_grippers()
-    robot.move_to_rest()
+    orien_const = OrientationConstraint()
+    orien_const.link_name = "left_gripper"
+    orien_const.header.frame_id = "base"
+    orien_const.orientation.x = 0.7071068
+    orien_const.orientation.y = 0.7071068
+    orien_const.absolute_x_axis_tolerance = 0.1
+    orien_const.absolute_y_axis_tolerance = 0.1
+    orien_const.absolute_z_axis_tolerance = 0.1
+    orien_const.weight = 1.0
+
+    for entry_point in entry_points:
+        entry_pose = PoseStamped()
+        entry_pose.pose.position.x = entry_point.x
+        entry_pose.pose.position.y = entry_point.y
+        entry_pose.pose.position.z = entry_point.z
+        entry_pose.pose.orientation.x = 0.7071068
+        entry_pose.pose.orientation.y =  0.7071068
+        robot.move_arm(robot._left_planner, entry_pose, [orien_const], prompt=True)
     
 
 if __name__ == '__main__':
-    main()
-    # test()
+    # main()
+    test()
